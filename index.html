@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>恐龙进化 - Dino Evolution</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      overflow: hidden;
+      font-family: Arial, sans-serif;
+    }
+    
+    canvas {
+      display: block;
+    }
+    
+    #loading {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      color: white;
+      z-index: 9999;
+    }
+    
+    #loading h1 {
+      font-size: 48px;
+      margin-bottom: 20px;
+    }
+    
+    #loading p {
+      font-size: 20px;
+    }
+    
+    .start-btn {
+      margin-top: 40px;
+      padding: 15px 40px;
+      font-size: 24px;
+      background: white;
+      color: #667eea;
+      border: none;
+      border-radius: 30px;
+      cursor: pointer;
+      transition: transform 0.2s;
+    }
+    
+    .start-btn:hover {
+      transform: scale(1.1);
+    }
+    
+    @keyframes fadeInOut {
+      0%, 100% { opacity: 0; }
+      50% { opacity: 1; }
+    }
+    
+    #controls-info {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      background: rgba(0, 0, 0, 0.7);
+      color: white;
+      padding: 15px 20px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-family: 'Courier New', monospace;
+      z-index: 100;
+      display: none;
+    }
+    
+    #controls-info h3 {
+      margin: 0 0 10px 0;
+      font-size: 16px;
+      color: #4CAF50;
+    }
+    
+    #controls-info ul {
+      margin: 0;
+      padding-left: 20px;
+      list-style: none;
+    }
+    
+    #controls-info li {
+      margin: 5px 0;
+    }
+    
+    #controls-info li::before {
+      content: "▸ ";
+      color: #4CAF50;
+    }
+    
+    #debug-info {
+      position: fixed;
+      bottom: 20px;
+      left: 20px;
+      background: rgba(0, 0, 0, 0.7);
+      color: white;
+      padding: 10px 15px;
+      border-radius: 10px;
+      font-size: 12px;
+      font-family: 'Courier New', monospace;
+      z-index: 100;
+      display: none;
+    }
+    
+    #debug-info div {
+      margin: 3px 0;
+    }
+    
+    #growth-bar {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      width: 300px;
+      background: rgba(0, 0, 0, 0.7);
+      padding: 15px;
+      border-radius: 10px;
+      color: white;
+      font-family: Arial, sans-serif;
+      z-index: 100;
+      display: none;
+    }
+    
+    #growth-bar h3 {
+      margin: 0 0 10px 0;
+      font-size: 16px;
+      color: #4CAF50;
+    }
+    
+    .progress-container {
+      width: 100%;
+      height: 30px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 15px;
+      overflow: hidden;
+      margin: 10px 0;
+    }
+    
+    .progress-bar {
+      height: 100%;
+      background: linear-gradient(90deg, #2ecc71, #27ae60);
+      width: 0%;
+      transition: width 0.5s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: bold;
+      font-size: 14px;
+    }
+    
+    .growth-info {
+      font-size: 14px;
+      margin: 5px 0;
+    }
+    
+    #evolution-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.9);
+      display: none;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 10000;
+      animation: fadeIn 0.5s ease;
+    }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    
+    @keyframes glow {
+      0%, 100% { text-shadow: 0 0 20px #fff, 0 0 30px #4CAF50, 0 0 40px #4CAF50; }
+      50% { text-shadow: 0 0 30px #fff, 0 0 50px #4CAF50, 0 0 60px #4CAF50; }
+    }
+    
+    #evolution-overlay h1 {
+      font-size: 60px;
+      color: white;
+      animation: glow 1.5s infinite;
+      margin-bottom: 30px;
+    }
+    
+    #evolution-overlay .evolution-content {
+      text-align: center;
+      color: white;
+    }
+    
+    #evolution-overlay .evolution-arrow {
+      font-size: 40px;
+      margin: 20px 0;
+    }
+    
+    #evolution-overlay .dino-name {
+      font-size: 36px;
+      font-weight: bold;
+      color: #4CAF50;
+    }
+    
+    #evolution-overlay .dino-desc {
+      font-size: 20px;
+      color: #ccc;
+      margin-top: 10px;
+    }
+    
+    #dino-info {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: rgba(0, 0, 0, 0.7);
+      color: white;
+      padding: 15px 20px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-family: Arial, sans-serif;
+      z-index: 100;
+      display: none;
+      text-align: right;
+    }
+    
+    #dino-info h3 {
+      margin: 0 0 10px 0;
+      font-size: 18px;
+      color: #4CAF50;
+    }
+    
+    #dino-info .info-line {
+      margin: 5px 0;
+    }
+  </style>
+</head>
+<body>
+  <div id="loading">
+    <h1>🦖 恐龙进化</h1>
+    <p>一个有趣的3D成长游戏</p>
+    <button class="start-btn" onclick="startGame()">开始游戏</button>
+    <p style="margin-top: 20px; font-size: 14px;">
+      WASD移动 | 鼠标控制视角
+    </p>
+  </div>
+  
+  <!-- 控制说明 -->
+  <div id="controls-info">
+    <h3>🎮 游戏操作</h3>
+    <ul>
+      <li><strong>W A S D</strong> - 移动</li>
+      <li><strong>Shift</strong> - 加速冲刺</li>
+      <li><strong>鼠标拖拽</strong> - 旋转视角</li>
+      <li><strong>滚轮</strong> - 调整相机距离</li>
+      <li><strong>空格</strong> - 跳跃</li>
+    </ul>
+  </div>
+  
+  <!-- 调试信息 -->
+  <div id="debug-info">
+    <div>🦖 玩家体积: <span id="player-volume">1.00</span></div>
+    <div>🎯 可吞噬: &lt; <span id="eatable-volume">0.80</span></div>
+    <div>📊 剩余物体: <span id="object-count">30</span></div>
+    <div>⭐ 总经验: <span id="total-exp">0</span></div>
+    <div>🕐 重生队列: <span id="respawn-queue">0</span></div>
+    <div>⏰ 下次重生: <span id="next-respawn">--</span></div>
+    <div style="margin-top: 5px; color: #4CAF50;">
+      💡 绿色数字 = 可吞噬<br>
+      💡 红色数字 = 不可吞噬
+    </div>
+  </div>
+  
+  <!-- 成长进度条 -->
+  <div id="growth-bar">
+    <h3>📈 成长进度</h3>
+    <div class="progress-container">
+      <div class="progress-bar" id="progress-fill">0%</div>
+    </div>
+    <div class="growth-info">
+      体型: <span id="current-scale">1.0</span>x / 3.0x
+    </div>
+    <div class="growth-info">
+      体积: <span id="current-volume">1.00</span>
+    </div>
+  </div>
+  
+  <!-- 恐龙信息 -->
+  <div id="dino-info">
+    <h3 id="dino-name">迅猛龙</h3>
+    <div class="info-line" id="dino-level">等级 1</div>
+    <div class="info-line" id="next-evo-exp">还需 100 经验进化</div>
+  </div>
+  
+  <!-- 进化动画覆盖层 -->
+  <div id="evolution-overlay">
+    <h1>✨ 进化中... ✨</h1>
+    <div class="evolution-content">
+      <div class="dino-name" id="evolution-from">迅猛龙</div>
+      <div class="evolution-arrow">↓</div>
+      <div class="dino-name" id="evolution-to">三角龙</div>
+      <div class="dino-desc" id="evolution-desc">防御力强</div>
+    </div>
+  </div>
+  
+  <script type="module" src="/src/main.js"></script>
+  
+  <script>
+    function startGame() {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('controls-info').style.display = 'block';
+      document.getElementById('debug-info').style.display = 'block';
+      document.getElementById('growth-bar').style.display = 'block';
+      document.getElementById('dino-info').style.display = 'block';
+      window.dispatchEvent(new Event('gameStart'));
+    }
+  </script>
+</body>
+</html>
